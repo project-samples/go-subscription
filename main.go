@@ -8,11 +8,11 @@ import (
 	"net/http"
 	"strconv"
 
-	c "go-service/internal"
+	"go-service/internal/app"
 )
 
 func main() {
-	var conf c.Root
+	var conf app.Root
 	er1 := config.Load(&conf, "configs/config")
 	if er1 != nil {
 		panic(er1)
@@ -20,7 +20,7 @@ func main() {
 	log.Initialize(conf.Log)
 	ctx := context.Background()
 
-	app, er2 := c.NewApp(ctx, conf)
+	app, er2 := app.NewApp(ctx, conf)
 	if er2 != nil {
 		panic(er2)
 	}
@@ -31,7 +31,7 @@ func main() {
 }
 
 // Start a http server to serve HTTP requests
-func serve(ctx context.Context, config c.ServerConfig, healthHandler *health.HealthHandler) {
+func serve(ctx context.Context, config app.ServerConfig, healthHandler *health.HealthHandler) {
 	server := ""
 	if config.Port > 0 {
 		server = ":" + strconv.Itoa(config.Port)

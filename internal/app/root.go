@@ -1,4 +1,4 @@
-package internal
+package app
 
 import (
 	"github.com/common-go/kafka"
