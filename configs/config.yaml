@@ -15,6 +15,11 @@ mongo:
 kafka_consumer:
   brokers: tricycle-01.srvs.cloudkafka.com:9094
   client:
+    tls_enable: true
+    sasl_enable: true
+    sasl_handshake: true
+    tls:
+      insecure_skip_verify: true
     username: ah1t9hk0
     password: QvMB75cxJ48KYRnGfwXcRNxzALyAeb7-
   group_id: my-group
