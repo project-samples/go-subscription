@@ -23,13 +23,13 @@ type ApplicationContext struct {
 func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 	mongoDb, er1 := mongo.SetupMongo(ctx, root.Mongo)
 	if er1 != nil {
-		logrus.Errorf("Can't connect mongoDB: Error: %s", er1.Error())
+		log.Error(ctx, "Cannot connect to MongoDB: Error: "+er1.Error())
 		return nil, er1
 	}
 
 	consumer, er2 := kafka.NewConsumerByConfig(root.KafkaConsumer, true)
 	if er2 != nil {
-		logrus.Errorf("Can't new consumer: Error: %s", er2.Error())
+		log.Error(ctx, "Cannot create a new consumer: Error: "+er2.Error())
 		return nil, er2
 	}
 	logError := log.ErrorMsg
@@ -44,14 +44,14 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 	validator := mq.NewValidator(userTypeOf, v)
 	consumerCaller := mq.NewConsumerCaller(userTypeOf, writer, 3, nil, "", validator, nil, true, logError, logInfo)
 
-	mongoHealthService := mongo.NewHealthChecker(mongoDb)
-	subHealthService := kafka.NewDefaultKafkaHealthChecker(root.KafkaConsumer.Brokers)
-	healthServices := []health.HealthChecker{mongoHealthService, subHealthService}
-	healthController := health.NewHealthHandler(healthServices)
+	mongoChecker := mongo.NewHealthChecker(mongoDb)
+	consumerChecker := kafka.NewDefaultKafkaHealthChecker(root.KafkaConsumer.Brokers)
+	healthCheckers := []health.HealthChecker{mongoChecker, consumerChecker}
+	healthHandler := health.NewHealthHandler(healthCheckers)
 	return &ApplicationContext{
 		Consumer:       consumer,
 		ConsumerCaller: consumerCaller,
-		HealthHandler:  healthController,
+		HealthHandler:  healthHandler,
 	}, nil
 }
 

@@ -4,7 +4,8 @@ import (
 	"context"
 	"github.com/common-go/config"
 	"github.com/common-go/health"
-	"github.com/common-go/log"
+	logger "github.com/common-go/log"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -17,7 +18,7 @@ func main() {
 	if er1 != nil {
 		panic(er1)
 	}
-	log.Initialize(conf.Log)
+	logger.Initialize(conf.Log)
 	ctx := context.Background()
 
 	app, er2 := app.NewApp(ctx, conf)
@@ -25,18 +26,18 @@ func main() {
 		panic(er2)
 	}
 
-	go serve(ctx, conf.Server, app.HealthHandler)
+	go serve(conf.Server, app.HealthHandler)
 
 	app.Consumer.Consume(ctx, app.ConsumerCaller)
 }
 
 // Start a http server to serve HTTP requests
-func serve(ctx context.Context, config app.ServerConfig, healthHandler *health.HealthHandler) {
+func serve(config app.ServerConfig, healthHandler *health.HealthHandler) {
 	server := ""
 	if config.Port > 0 {
 		server = ":" + strconv.Itoa(config.Port)
 	}
-	log.Info(ctx, "Start "+config.Name)
+	log.Println("Start " + config.Name)
 	http.HandleFunc("/health", healthHandler.Check)
 	http.HandleFunc("/", healthHandler.Check)
 	http.ListenAndServe(server, nil)
