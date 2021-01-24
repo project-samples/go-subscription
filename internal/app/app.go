@@ -4,6 +4,7 @@ import (
 	"context"
 	"reflect"
 
+	"github.com/common-go/config"
 	"github.com/common-go/health"
 	"github.com/common-go/kafka"
 	"github.com/common-go/log"
@@ -27,31 +28,36 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 		return nil, er1
 	}
 
-	consumer, er2 := kafka.NewConsumerByConfig(root.KafkaConsumer, true)
-	if er2 != nil {
-		log.Error(ctx, "Cannot create a new consumer: Error: "+er2.Error())
-		return nil, er2
-	}
 	logError := log.ErrorMsg
 	var logInfo func(context.Context, string)
 	if logrus.IsLevelEnabled(logrus.InfoLevel) {
 		logInfo = log.InfoMsg
 	}
 
+	consumer, er2 := kafka.NewConsumerByConfig(root.KafkaConsumer, true)
+	if er2 != nil {
+		log.Error(ctx, "Cannot create a new consumer: Error: "+er2.Error())
+		return nil, er2
+	}
+
 	userTypeOf := reflect.TypeOf(User{})
 	writer := mongo.NewMongoInserter(mongoDb, "users")
-	v := NewUserValidator()
-	validator := mq.NewValidator(userTypeOf, v)
-	consumerCaller := mq.NewConsumerCaller(userTypeOf, writer, 3, nil, "", validator, nil, true, logError, logInfo)
-
+	validator := mq.NewValidator(userTypeOf, NewUserValidator())
+	var consumerCaller mq.ConsumerCaller
+	if root.Retry == nil {
+		consumerCaller = mq.NewConsumerCaller(userTypeOf, writer, 3, nil, "", validator, nil, true, logError, logInfo)
+	} else {
+		retries := config.DurationsFromValue(root.Retry, "Retry", 9)
+		consumerCaller = mq.NewConsumerCallerWithRetries(userTypeOf, writer, validator, retries, nil, false, logError, logInfo)
+	}
 	mongoChecker := mongo.NewHealthChecker(mongoDb)
-	consumerChecker := kafka.NewDefaultKafkaHealthChecker(root.KafkaConsumer.Brokers)
-	healthCheckers := []health.HealthChecker{mongoChecker, consumerChecker}
-	healthHandler := health.NewHealthHandler(healthCheckers)
+	consumerChecker := kafka.NewKafkaHealthChecker(root.KafkaConsumer.Brokers)
+	checkers := []health.HealthChecker{mongoChecker, consumerChecker}
+	handler := health.NewHealthHandler(checkers)
 	return &ApplicationContext{
 		Consumer:       consumer,
 		ConsumerCaller: consumerCaller,
-		HealthHandler:  healthHandler,
+		HealthHandler:  handler,
 	}, nil
 }
 

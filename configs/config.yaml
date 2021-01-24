@@ -3,7 +3,7 @@ server:
   port: 8080
 
 log:
-  level: debug
+  level: info
   map:
     time: "@timestamp"
     msg: message
@@ -24,6 +24,8 @@ kafka_consumer:
     password: QvMB75cxJ48KYRnGfwXcRNxzALyAeb7-
   group_id: my-group
   topic: ah1t9hk0-default
-  min_bytes: 0
-  max_bytes: 10485760
-  commit_interval: 1000
+
+retry:
+  1: 5
+  2: 7
+  3: 9
