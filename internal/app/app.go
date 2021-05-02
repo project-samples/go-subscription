@@ -4,25 +4,24 @@ import (
 	"context"
 	"reflect"
 
-	"github.com/common-go/config"
-	"github.com/common-go/health"
-	"github.com/common-go/kafka"
-	"github.com/common-go/log"
-	"github.com/common-go/mongo"
-	"github.com/common-go/mq"
-	v "github.com/common-go/validator"
-	"github.com/sirupsen/logrus"
-	"gopkg.in/go-playground/validator.v9"
+	"github.com/core-go/health"
+	mgo "github.com/core-go/mongo"
+	"github.com/core-go/mq"
+	"github.com/core-go/mq/kafka"
+	"github.com/core-go/mq/log"
+	v "github.com/core-go/mq/validator"
+	"github.com/go-playground/validator/v10"
 )
 
 type ApplicationContext struct {
-	Consumer       mq.Consumer
-	ConsumerCaller mq.ConsumerCaller
-	HealthHandler  *health.HealthHandler
+	HealthHandler *health.HealthHandler
+	Receive       func(ctx context.Context, handle func(context.Context, *mq.Message, error) error)
+	Handler       *mq.Handler
 }
 
 func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
-	mongoDb, er1 := mongo.SetupMongo(ctx, root.Mongo)
+	log.Initialize(root.Log)
+	db, er1 := mgo.SetupMongo(ctx, root.Mongo)
 	if er1 != nil {
 		log.Error(ctx, "Cannot connect to MongoDB: Error: "+er1.Error())
 		return nil, er1
@@ -30,34 +29,43 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 
 	logError := log.ErrorMsg
 	var logInfo func(context.Context, string)
-	if logrus.IsLevelEnabled(logrus.InfoLevel) {
+	if log.IsInfoEnable() {
 		logInfo = log.InfoMsg
 	}
 
-	consumer, er2 := kafka.NewConsumerByConfig(root.KafkaConsumer, true)
+	receiver, er2 := kafka.NewReaderByConfig(root.Reader.KafkaConsumer, true)
 	if er2 != nil {
-		log.Error(ctx, "Cannot create a new consumer: Error: "+er2.Error())
+		log.Error(ctx, "Cannot create a new receiver. Error: "+er2.Error())
 		return nil, er2
 	}
+	userType := reflect.TypeOf(User{})
+	writer := mgo.NewInserter(db, "users")
+	checker := v.NewErrorChecker(NewUserValidator().Validate)
+	validator := mq.NewValidator(userType, checker.Check)
 
-	userTypeOf := reflect.TypeOf(User{})
-	writer := mongo.NewMongoInserter(mongoDb, "users")
-	validator := mq.NewValidator(userTypeOf, NewUserValidator())
-	var consumerCaller mq.ConsumerCaller
-	if root.Retry == nil {
-		consumerCaller = mq.NewConsumerCaller(userTypeOf, writer, 3, nil, "", validator, nil, true, logError, logInfo)
+	mongoChecker := mgo.NewHealthChecker(db)
+	receiverChecker := kafka.NewKafkaHealthChecker(root.Reader.KafkaConsumer.Brokers, "kafka_consumer")
+	var healthHandler *health.HealthHandler
+	var handler *mq.Handler
+	if root.KafkaWriter != nil {
+		sender, er3 := kafka.NewWriterByConfig(*root.KafkaWriter)
+		if er3 != nil {
+			log.Error(ctx, "Cannot new a new sender. Error:"+er3.Error())
+			return nil, er3
+		}
+		retryService := mq.NewRetryService(sender.Write, logError, logInfo)
+		handler = mq.NewHandlerByConfig(root.Reader.Config, userType, writer.Write, retryService.Retry, validator.Validate, nil, logError, logInfo)
+		senderChecker := kafka.NewKafkaHealthChecker(root.KafkaWriter.Brokers, "kafka_producer")
+		healthHandler = health.NewHealthHandler(mongoChecker, receiverChecker, senderChecker)
 	} else {
-		retries := config.DurationsFromValue(root.Retry, "Retry", 9)
-		consumerCaller = mq.NewConsumerCallerWithRetries(userTypeOf, writer, validator, retries, nil, false, logError, logInfo)
+		healthHandler = health.NewHealthHandler(mongoChecker, receiverChecker)
+		handler = mq.NewHandlerWithRetryConfig(userType, writer.Write, validator.Validate, root.Retry, true, logError, logInfo)
 	}
-	mongoChecker := mongo.NewHealthChecker(mongoDb)
-	consumerChecker := kafka.NewKafkaHealthChecker(root.KafkaConsumer.Brokers)
-	checkers := []health.HealthChecker{mongoChecker, consumerChecker}
-	handler := health.NewHealthHandler(checkers)
+
 	return &ApplicationContext{
-		Consumer:       consumer,
-		ConsumerCaller: consumerCaller,
-		HealthHandler:  handler,
+		HealthHandler: healthHandler,
+		Receive:       receiver.Read,
+		Handler:       handler,
 	}, nil
 }
 
@@ -66,7 +74,6 @@ func NewUserValidator() v.Validator {
 	validator.CustomValidateList = append(validator.CustomValidateList, v.CustomValidate{Fn: CheckActive, Tag: "active"})
 	return validator
 }
-
 func CheckActive(fl validator.FieldLevel) bool {
 	return fl.Field().Bool()
 }

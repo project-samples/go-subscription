@@ -2,9 +2,8 @@ package main
 
 import (
 	"context"
-	"github.com/common-go/config"
-	"github.com/common-go/health"
-	"github.com/common-go/log"
+	"github.com/core-go/config"
+	"github.com/core-go/health/server"
 
 	"go-service/internal/app"
 )
@@ -15,7 +14,6 @@ func main() {
 	if er1 != nil {
 		panic(er1)
 	}
-	log.Initialize(conf.Log)
 	ctx := context.Background()
 
 	app, er2 := app.NewApp(ctx, conf)
@@ -23,7 +21,6 @@ func main() {
 		panic(er2)
 	}
 
-	go health.Serve(conf.Server, app.HealthHandler)
-
-	app.Consumer.Consume(ctx, app.ConsumerCaller)
+	go server.Serve(conf.Server, app.HealthHandler.Check)
+	app.Receive(ctx, app.Handler.Handle)
 }

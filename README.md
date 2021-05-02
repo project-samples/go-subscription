@@ -1,1 +1,1 @@
-# go-consumer
+# go-subscription
