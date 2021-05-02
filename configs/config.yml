@@ -17,25 +17,20 @@ retry:
   2: 7
   3: 9
 
-reader:
-  kafka:
-    brokers: tricycle-01.srvs.cloudkafka.com:9094
-    client:
-      username: ah1t9hk0
-      password: QvMB75cxJ48KYRnGfwXcRNxzALyAeb7-
-    group_id: my-group
-    topic: ah1t9hk0-default
+consumer:
+  rabbitmq:
+    url: amqp://guest:guest@localhost:5672/
+    exchange_name: test
+    exchange_kind: fanout
+    auto_delete: false
   retry:
     retry_count_name: retry
     limit_retry: 3
     goroutines: false
 
-writer:
-  brokers:
-    - tricycle-01.srvs.cloudkafka.com:9094
-    - tricycle-02.srvs.cloudkafka.com:9094
-    - tricycle-03.srvs.cloudkafka.com:9094
-  client:
-    username: ah1t9hk0
-    password: QvMB75cxJ48KYRnGfwXcRNxzALyAeb7-
-  topic: ah1t9hk0-default
+publisher:
+  url: amqp://guest:guest@localhost:5672/
+  exchange_name: test
+  exchange_kind: fanout
+  auto_delete: false
+  content_type: text/plain
