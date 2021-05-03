@@ -4,8 +4,8 @@ import (
 	"github.com/core-go/health/server"
 	"github.com/core-go/mongo"
 	"github.com/core-go/mq"
-	"github.com/core-go/mq/kafka"
 	"github.com/core-go/mq/log"
+	"github.com/core-go/mq/sarama"
 )
 
 type Root struct {
