@@ -43,7 +43,7 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 	checker := v.NewErrorChecker(NewUserValidator().Validate)
 	validator := mq.NewValidator(userType, checker.Check)
 
-	mongoChecker := dyn.NewHealthChecker(db)
+	dynamodbChecker := dyn.NewHealthChecker(db)
 	receiverChecker := kafka.NewKafkaHealthChecker(root.Reader.KafkaConsumer.Brokers, "kafka_consumer")
 	var healthHandler *health.HealthHandler
 	var handler *mq.Handler
@@ -56,9 +56,9 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 		retryService := mq.NewRetryService(sender.Write, logError, logInfo)
 		handler = mq.NewHandlerByConfig(root.Reader.Config, userType, writer.Write, retryService.Retry, validator.Validate, nil, logError, logInfo)
 		senderChecker := kafka.NewKafkaHealthChecker(root.KafkaWriter.Brokers, "kafka_producer")
-		healthHandler = health.NewHealthHandler(mongoChecker, receiverChecker, senderChecker)
+		healthHandler = health.NewHealthHandler(dynamodbChecker, receiverChecker, senderChecker)
 	} else {
-		healthHandler = health.NewHealthHandler(mongoChecker, receiverChecker)
+		healthHandler = health.NewHealthHandler(dynamodbChecker, receiverChecker)
 		handler = mq.NewHandlerWithRetryConfig(userType, writer.Write, validator.Validate, root.Retry, true, logError, logInfo)
 	}
 
