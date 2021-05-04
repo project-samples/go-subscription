@@ -8,9 +8,11 @@ log:
     time: "@timestamp"
     msg: message
 
-mongo:
-  uri: mongodb://localhost:27017
-  database: masterdata
+dynamodb:
+  access_key_id: IDdemo
+  secret_access_key: KEYdemo
+  region: us-west-2
+  token:
 
 retry:
   1: 5
@@ -21,10 +23,10 @@ reader:
   kafka:
     brokers: tricycle-01.srvs.cloudkafka.com:9094
     client:
-      username: ah1t9hk0
-      password: QvMB75cxJ48KYRnGfwXcRNxzALyAeb7-
+      username: username-demo
+      password: pwdemo
     group_id: my-group
-    topic: ah1t9hk0-default
+    topic: demo-default
   retry:
     retry_count_name: retry
     limit_retry: 3
@@ -36,6 +38,6 @@ writer:
     - tricycle-02.srvs.cloudkafka.com:9094
     - tricycle-03.srvs.cloudkafka.com:9094
   client:
-    username: ah1t9hk0
-    password: QvMB75cxJ48KYRnGfwXcRNxzALyAeb7-
-  topic: ah1t9hk0-default
+    username: username-demo
+    password: pwdemo
+  topic: demo-default

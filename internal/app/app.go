@@ -4,8 +4,8 @@ import (
 	"context"
 	"reflect"
 
+	dyn "github.com/core-go/dynamodb"
 	"github.com/core-go/health"
-	mgo "github.com/core-go/mongo"
 	"github.com/core-go/mq"
 	"github.com/core-go/mq/log"
 	"github.com/core-go/mq/sarama"
@@ -21,9 +21,9 @@ type ApplicationContext struct {
 
 func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 	log.Initialize(root.Log)
-	db, er1 := mgo.SetupMongo(ctx, root.Mongo)
+	db, er1 := dyn.Connect(root.Dynamodb)
 	if er1 != nil {
-		log.Error(ctx, "Cannot connect to MongoDB: Error: "+er1.Error())
+		log.Error(ctx, "Cannot connect to Dynamodb: Error: "+er1.Error())
 		return nil, er1
 	}
 
@@ -39,11 +39,11 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 		return nil, er2
 	}
 	userType := reflect.TypeOf(User{})
-	writer := mgo.NewInserter(db, "users")
+	writer := dyn.NewInserter(db, "users",[]string{"id"})
 	checker := v.NewErrorChecker(NewUserValidator().Validate)
 	validator := mq.NewValidator(userType, checker.Check)
 
-	mongoChecker := mgo.NewHealthChecker(db)
+	mongoChecker := dyn.NewHealthChecker(db)
 	receiverChecker := kafka.NewKafkaHealthChecker(root.Reader.KafkaConsumer.Brokers, "kafka_consumer")
 	var healthHandler *health.HealthHandler
 	var handler *mq.Handler
