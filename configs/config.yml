@@ -9,13 +9,12 @@ log:
     msg: message
 
 sql:
-#  data_source_name: root:Nevergiveup4vn.@tcp(127.0.0.1:3306)/masterdata?parseTime=true
   driver: mysql
   host: 127.0.0.1
   port: 3306
   database: masterdata
   user: root
-  password: Nevergiveup4vn.
+  password: pwDEMO
 retry:
   1: 5
   2: 7
