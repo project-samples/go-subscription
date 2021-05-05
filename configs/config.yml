@@ -9,12 +9,7 @@ log:
     msg: message
 
 sql:
-  driver: mysql
-  host: 127.0.0.1
-  port: 3306
-  database: masterdata
-  user: root
-  password: pwDEMO
+  data_source_name: root:password@tcp(127.0.0.1:3306)/masterdata?parseTime=true
 retry:
   1: 5
   2: 7
