@@ -8,10 +8,14 @@ log:
     time: "@timestamp"
     msg: message
 
-mongo:
-  uri: mongodb://localhost:27017
+sql:
+#  data_source_name: root:Nevergiveup4vn.@tcp(127.0.0.1:3306)/masterdata?parseTime=true
+  driver: mysql
+  host: 127.0.0.1
+  port: 3306
   database: masterdata
-
+  user: root
+  password: Nevergiveup4vn.
 retry:
   1: 5
   2: 7

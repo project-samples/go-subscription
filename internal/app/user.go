@@ -10,5 +10,5 @@ type User struct {
 	Phone       string     `json:"phone,omitempty" gorm:"column:phone" bson:"phone,omitempty" dynamodbav:"phone,omitempty" firestore:"required,phone,omitempty" validate:"required,phone,max=18"`
 	Active      bool       `json:"active" gorm:"column:active" bson:"active" dynamodbav:"active" firestore:"active" true:"A" false:"D"`
 	Locked      bool       `json:"locked" gorm:"column:locked" bson:"locked" dynamodbav:"locked" firestore:"locked" true:"1" false:"0"`
-	DateOfBirth *time.Time `json:"dateOfBirth,omitempty" gorm:"column:date_of_birth" bson:"dateOfBirth,omitempty" dynamodbav:"dateOfBirth,omitempty" firestore:"dateOfBirth,omitempty"`
+	DateOfBirth *time.Time `json:"dateOfBirth,omitempty" gorm:"column:dateofbirth" bson:"dateOfBirth,omitempty" dynamodbav:"dateOfBirth,omitempty" firestore:"dateOfBirth,omitempty"`
 }

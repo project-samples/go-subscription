@@ -2,16 +2,16 @@ package app
 
 import (
 	"github.com/core-go/health/server"
-	"github.com/core-go/mongo"
 	"github.com/core-go/mq"
 	"github.com/core-go/mq/log"
 	"github.com/core-go/mq/sarama"
+	"github.com/core-go/sql"
 )
 
 type Root struct {
 	Server      server.ServerConf   `mapstructure:"server"`
 	Log         log.Config          `mapstructure:"log"`
-	Mongo       mongo.MongoConfig   `mapstructure:"mongo"`
+	Sql         sql.Config          `mapstructure:"sql"`
 	Retry       *mq.RetryConfig     `mapstructure:"retry"`
 	Reader      ReaderConfig        `mapstructure:"reader"`
 	KafkaWriter *kafka.WriterConfig `mapstructure:"writer"`

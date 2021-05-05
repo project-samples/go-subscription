@@ -2,15 +2,15 @@ package app
 
 import (
 	"context"
-	"reflect"
-
 	"github.com/core-go/health"
-	mgo "github.com/core-go/mongo"
 	"github.com/core-go/mq"
 	"github.com/core-go/mq/log"
 	"github.com/core-go/mq/sarama"
 	v "github.com/core-go/mq/validator"
+	"github.com/core-go/sql"
 	"github.com/go-playground/validator/v10"
+	_ "github.com/go-sql-driver/mysql"
+	"reflect"
 )
 
 type ApplicationContext struct {
@@ -21,9 +21,9 @@ type ApplicationContext struct {
 
 func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 	log.Initialize(root.Log)
-	db, er1 := mgo.SetupMongo(ctx, root.Mongo)
+	db, er1 := sql.OpenByConfig(root.Sql)
 	if er1 != nil {
-		log.Error(ctx, "Cannot connect to MongoDB: Error: "+er1.Error())
+		log.Error(ctx, "Cannot connect to MySQL: Error: "+er1.Error())
 		return nil, er1
 	}
 
@@ -39,11 +39,11 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 		return nil, er2
 	}
 	userType := reflect.TypeOf(User{})
-	writer := mgo.NewInserter(db, "users")
+	writer := sql.NewInserter(db, "users")
 	checker := v.NewErrorChecker(NewUserValidator().Validate)
 	validator := mq.NewValidator(userType, checker.Check)
 
-	mongoChecker := mgo.NewHealthChecker(db)
+	sqlChecker := sql.NewHealthChecker(db)
 	receiverChecker := kafka.NewKafkaHealthChecker(root.Reader.KafkaConsumer.Brokers, "kafka_consumer")
 	var healthHandler *health.HealthHandler
 	var handler *mq.Handler
@@ -56,9 +56,9 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 		retryService := mq.NewRetryService(sender.Write, logError, logInfo)
 		handler = mq.NewHandlerByConfig(root.Reader.Config, userType, writer.Write, retryService.Retry, validator.Validate, nil, logError, logInfo)
 		senderChecker := kafka.NewKafkaHealthChecker(root.KafkaWriter.Brokers, "kafka_producer")
-		healthHandler = health.NewHealthHandler(mongoChecker, receiverChecker, senderChecker)
+		healthHandler = health.NewHealthHandler(sqlChecker, receiverChecker, senderChecker)
 	} else {
-		healthHandler = health.NewHealthHandler(mongoChecker, receiverChecker)
+		healthHandler = health.NewHealthHandler(sqlChecker, receiverChecker)
 		handler = mq.NewHandlerWithRetryConfig(userType, writer.Write, validator.Validate, root.Retry, true, logError, logInfo)
 	}
 
