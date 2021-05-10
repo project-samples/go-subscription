@@ -41,7 +41,7 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 	userType := reflect.TypeOf(User{})
 	writer := mongo.NewInserter(db, "user")
 	checker := validator.NewErrorChecker(NewUserValidator().Validate)
-	validator := mq.NewValidator(userType, checker.Check)
+	val := mq.NewValidator(userType, checker.Check)
 
 	mongoChecker := mongo.NewHealthChecker(db)
 	receiverChecker := kafka.NewKafkaHealthChecker(root.Reader.KafkaConsumer.Brokers, "kafka_consumer")
@@ -54,12 +54,12 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 			return nil, er3
 		}
 		retryService := mq.NewRetryService(sender.Write, logError, logInfo)
-		handler = mq.NewHandlerByConfig(root.Reader.Config, userType, writer.Write, retryService.Retry, validator.Validate, nil, logError, logInfo)
+		handler = mq.NewHandlerByConfig(root.Reader.Config, userType, writer.Write, retryService.Retry, val.Validate, nil, logError, logInfo)
 		senderChecker := kafka.NewKafkaHealthChecker(root.KafkaWriter.Brokers, "kafka_producer")
 		healthHandler = health.NewHealthHandler(mongoChecker, receiverChecker, senderChecker)
 	} else {
 		healthHandler = health.NewHealthHandler(mongoChecker, receiverChecker)
-		handler = mq.NewHandlerWithRetryConfig(userType, writer.Write, validator.Validate, root.Retry, true, logError, logInfo)
+		handler = mq.NewHandlerWithRetryConfig(userType, writer.Write, val.Validate, root.Retry, true, logError, logInfo)
 	}
 
 	return &ApplicationContext{
