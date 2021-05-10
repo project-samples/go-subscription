@@ -7,10 +7,11 @@ import (
 	"github.com/core-go/health"
 	"github.com/core-go/mongo"
 	"github.com/core-go/mq"
-	"github.com/core-go/mq/kafka"
+	"github.com/core-go/mq/amq"
 	"github.com/core-go/mq/log"
 	"github.com/core-go/mq/validator"
 	v "github.com/go-playground/validator/v10"
+	"github.com/go-stomp/stomp"
 )
 
 type ApplicationContext struct {
@@ -33,7 +34,7 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 		logInfo = log.InfoMsg
 	}
 
-	receiver, er2 := kafka.NewReaderByConfig(root.Reader.KafkaConsumer, true)
+	receiver, er2 := amq.NewSubscriberByConfig(root.Amq, stomp.AckAuto, true)
 	if er2 != nil {
 		log.Error(ctx, "Cannot create a new receiver. Error: "+er2.Error())
 		return nil, er2
@@ -44,27 +45,13 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 	val := mq.NewValidator(userType, checker.Check)
 
 	mongoChecker := mongo.NewHealthChecker(db)
-	receiverChecker := kafka.NewKafkaHealthChecker(root.Reader.KafkaConsumer.Brokers, "kafka_consumer")
-	var healthHandler *health.HealthHandler
-	var handler *mq.Handler
-	if root.KafkaWriter != nil {
-		sender, er3 := kafka.NewWriterByConfig(*root.KafkaWriter)
-		if er3 != nil {
-			log.Error(ctx, "Cannot new a new sender. Error:"+er3.Error())
-			return nil, er3
-		}
-		retryService := mq.NewRetryService(sender.Write, logError, logInfo)
-		handler = mq.NewHandlerByConfig(root.Reader.Config, userType, writer.Write, retryService.Retry, val.Validate, nil, logError, logInfo)
-		senderChecker := kafka.NewKafkaHealthChecker(root.KafkaWriter.Brokers, "kafka_producer")
-		healthHandler = health.NewHealthHandler(mongoChecker, receiverChecker, senderChecker)
-	} else {
-		healthHandler = health.NewHealthHandler(mongoChecker, receiverChecker)
-		handler = mq.NewHandlerWithRetryConfig(userType, writer.Write, val.Validate, root.Retry, true, logError, logInfo)
-	}
+	receiverChecker := amq.NewHealthChecker(receiver.Conn, "amq_subscriber")
+	handler := mq.NewHandlerWithRetryConfig(userType, writer.Write, val.Validate, root.Retry, true, logError, logInfo)
+	healthHandler := health.NewHealthHandler(mongoChecker, receiverChecker)
 
 	return &ApplicationContext{
 		HealthHandler: healthHandler,
-		Receive:       receiver.Read,
+		Receive:       receiver.Subscribe,
 		Handler:       handler,
 	}, nil
 }
