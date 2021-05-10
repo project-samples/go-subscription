@@ -4,9 +4,6 @@ server:
 
 log:
   level: info
-  map:
-    time: "@timestamp"
-    msg: message
 
 mongo:
   uri: mongodb+srv://dbUser:Demoaccount1@projectdemo.g0lah.mongodb.net
@@ -18,24 +15,18 @@ retry:
   3: 9
 
 reader:
-  kafka:
-    brokers: tricycle-01.srvs.cloudkafka.com:9094
-    client:
-      username: ah1t9hk0
-      password: QvMB75cxJ48KYRnGfwXcRNxzALyAeb7-
-    group_id: my-group
-    topic: ah1t9hk0-default
+  sqs:
+    region: abc
+    access_key_id: abc
+    secret_access_key: abc
+    queue_name: abc
   retry:
     retry_count_name: retry
     limit_retry: 3
     goroutines: false
 
 writer:
-  brokers:
-    - tricycle-01.srvs.cloudkafka.com:9094
-    - tricycle-02.srvs.cloudkafka.com:9094
-    - tricycle-03.srvs.cloudkafka.com:9094
-  client:
-    username: ah1t9hk0
-    password: QvMB75cxJ48KYRnGfwXcRNxzALyAeb7-
-  topic: ah1t9hk0-default
+  region: abc
+  access_key_id: abc
+  secret_access_key: abc
+  queue_name: abc

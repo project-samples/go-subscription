@@ -7,8 +7,8 @@ import (
 	"github.com/core-go/health"
 	"github.com/core-go/mongo"
 	"github.com/core-go/mq"
-	"github.com/core-go/mq/kafka"
 	"github.com/core-go/mq/log"
+	"github.com/core-go/mq/sqs"
 	"github.com/core-go/mq/validator"
 	v "github.com/go-playground/validator/v10"
 )
@@ -33,29 +33,34 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 		logInfo = log.InfoMsg
 	}
 
-	receiver, er2 := kafka.NewReaderByConfig(root.Reader.KafkaConsumer, true)
+	client, er2 := sqs.Connect(root.Receiver.SQS)
 	if er2 != nil {
-		log.Error(ctx, "Cannot create a new receiver. Error: "+er2.Error())
+		log.Error(ctx, "Cannot create a new sqs. Error: "+er2.Error())
 		return nil, er2
 	}
+	receiver := sqs.NewReceiver(client, root.Receiver.SQS.QueueName, true, 20, 1)
+
 	userType := reflect.TypeOf(User{})
 	writer := mongo.NewInserter(db, "user")
 	checker := validator.NewErrorChecker(NewUserValidator().Validate)
 	val := mq.NewValidator(userType, checker.Check)
 
 	mongoChecker := mongo.NewHealthChecker(db)
-	receiverChecker := kafka.NewKafkaHealthChecker(root.Reader.KafkaConsumer.Brokers, "kafka_consumer")
+	receiverChecker := sqs.NewHealthChecker(client, root.Receiver.SQS.QueueName, "sqs_receiver")
 	var healthHandler *health.HealthHandler
 	var handler *mq.Handler
-	if root.KafkaWriter != nil {
-		sender, er3 := kafka.NewWriterByConfig(*root.KafkaWriter)
+	if root.Sender != nil {
+		senderClient, er3 := sqs.Connect(*root.Sender)
 		if er3 != nil {
-			log.Error(ctx, "Cannot new a new sender. Error:"+er3.Error())
+			log.Error(ctx, "Cannot new a new sqs sender. Error:"+er3.Error())
 			return nil, er3
 		}
-		retryService := mq.NewRetryService(sender.Write, logError, logInfo)
-		handler = mq.NewHandlerByConfig(root.Reader.Config, userType, writer.Write, retryService.Retry, val.Validate, nil, logError, logInfo)
-		senderChecker := kafka.NewKafkaHealthChecker(root.KafkaWriter.Brokers, "kafka_producer")
+		var delaySecond int64
+		delaySecond = 1
+		sender := sqs.NewSender(senderClient, root.Sender.QueueName, &delaySecond)
+		retryService := mq.NewRetryService(sender.Send, logError, logInfo)
+		handler = mq.NewHandlerByConfig(root.Receiver.Config, userType, writer.Write, retryService.Retry, val.Validate, nil, logError, logInfo)
+		senderChecker := sqs.NewHealthChecker(senderClient, root.Sender.QueueName, "sqs_sender")
 		healthHandler = health.NewHealthHandler(mongoChecker, receiverChecker, senderChecker)
 	} else {
 		healthHandler = health.NewHealthHandler(mongoChecker, receiverChecker)
@@ -64,7 +69,7 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 
 	return &ApplicationContext{
 		HealthHandler: healthHandler,
-		Receive:       receiver.Read,
+		Receive:       receiver.Receive,
 		Handler:       handler,
 	}, nil
 }
