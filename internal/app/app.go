@@ -5,7 +5,7 @@ import (
 	"reflect"
 
 	"github.com/core-go/health"
-	"github.com/core-go/mongo"
+	mgo "github.com/core-go/mongo"
 	"github.com/core-go/mq"
 	"github.com/core-go/mq/amq"
 	"github.com/core-go/mq/log"
@@ -22,7 +22,7 @@ type ApplicationContext struct {
 
 func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 	log.Initialize(root.Log)
-	db, er1 := mongo.SetupMongo(ctx, root.Mongo)
+	db, er1 := mgo.SetupMongo(ctx, root.Mongo)
 	if er1 != nil {
 		log.Error(ctx, "Cannot connect to MongoDB: Error: "+er1.Error())
 		return nil, er1
@@ -40,12 +40,12 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 		return nil, er2
 	}
 	userType := reflect.TypeOf(User{})
-	writer := mongo.NewInserter(db, "user")
+	writer := mgo.NewInserter(db, "users")
 	checker := validator.NewErrorChecker(NewUserValidator().Validate)
 	val := mq.NewValidator(userType, checker.Check)
 
-	mongoChecker := mongo.NewHealthChecker(db)
-	receiverChecker := amq.NewHealthChecker(receiver.Conn, "amq_subscriber")
+	mongoChecker := mgo.NewHealthChecker(db)
+	receiverChecker := amq.NewHealthChecker(root.Amq.Addr, "amq_subscriber")
 	handler := mq.NewHandlerWithRetryConfig(userType, writer.Write, val.Validate, root.Retry, true, logError, logInfo)
 	healthHandler := health.NewHealthHandler(mongoChecker, receiverChecker)
 
