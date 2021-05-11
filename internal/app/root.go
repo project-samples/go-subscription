@@ -13,8 +13,8 @@ type Root struct {
 	Log      log.Config        `mapstructure:"log"`
 	Mongo    mongo.MongoConfig `mapstructure:"mongo"`
 	Retry    *mq.RetryConfig   `mapstructure:"retry"`
-	Receiver ReceiverConfig    `mapstructure:"receiver"`
-	Sender   *sqs.Config       `mapstructure:"sender"`
+	Receiver ReceiverConfig    `mapstructure:"reader"`
+	Sender   *sqs.Config       `mapstructure:"writer"`
 }
 
 type ReceiverConfig struct {

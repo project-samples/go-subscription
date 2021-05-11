@@ -38,7 +38,7 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 		log.Error(ctx, "Cannot create a new sqs. Error: "+er2.Error())
 		return nil, er2
 	}
-	receiver := sqs.NewReceiver(client, root.Receiver.SQS.QueueName, true, 20, 1)
+	receiver,_ := sqs.NewReceiverByQueueName(client, root.Receiver.SQS.QueueName, true, 20, 1)
 
 	userType := reflect.TypeOf(User{})
 	writer := mongo.NewInserter(db, "user")
@@ -57,7 +57,7 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 		}
 		var delaySecond int64
 		delaySecond = 1
-		sender := sqs.NewSender(senderClient, root.Sender.QueueName, &delaySecond)
+		sender,_ := sqs.NewSenderByQueueName(senderClient, root.Sender.QueueName, &delaySecond)
 		retryService := mq.NewRetryService(sender.Send, logError, logInfo)
 		handler = mq.NewHandlerByConfig(root.Receiver.Config, userType, writer.Write, retryService.Retry, val.Validate, nil, logError, logInfo)
 		senderChecker := sqs.NewHealthChecker(senderClient, root.Sender.QueueName, "sqs_sender")

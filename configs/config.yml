@@ -6,7 +6,7 @@ log:
   level: info
 
 mongo:
-  uri: mongodb+srv://dbUser:Demoaccount1@projectdemo.g0lah.mongodb.net
+  uri: mongodb://localhost:27017
   database: masterdata
 
 retry:
@@ -16,7 +16,7 @@ retry:
 
 reader:
   sqs:
-    region: abc
+    region: us-west-2
     access_key_id: abc
     secret_access_key: abc
     queue_name: abc
@@ -26,7 +26,7 @@ reader:
     goroutines: false
 
 writer:
-  region: abc
+  region: us-west-2
   access_key_id: abc
   secret_access_key: abc
   queue_name: abc
