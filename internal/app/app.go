@@ -9,8 +9,8 @@ import (
 	"github.com/core-go/mq"
 	"github.com/core-go/mq/log"
 	"github.com/core-go/mq/rabbitmq"
-	v "github.com/core-go/mq/validator"
-	"github.com/go-playground/validator/v10"
+	"github.com/core-go/mq/validator"
+	v "github.com/go-playground/validator/v10"
 )
 
 type ApplicationContext struct {
@@ -40,8 +40,8 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 	}
 	userType := reflect.TypeOf(User{})
 	writer := mgo.NewInserter(db, "users")
-	checker := v.NewErrorChecker(NewUserValidator().Validate)
-	validator := mq.NewValidator(userType, checker.Check)
+	checker := validator.NewErrorChecker(NewUserValidator().Validate)
+	val := mq.NewValidator(userType, checker.Check)
 
 	mongoChecker := mgo.NewHealthChecker(db)
 	receiverChecker := rabbitmq.NewHealthChecker(root.Consumer.RabbitMQ.Url, "rabbitmq_consumer")
@@ -54,12 +54,12 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 			return nil, er3
 		}
 		retryService := mq.NewRetryService(sender.Publish, logError, logInfo)
-		handler = mq.NewHandlerByConfig(root.Consumer.Config, userType, writer.Write, retryService.Retry, validator.Validate, nil, logError, logInfo)
+		handler = mq.NewHandlerByConfig(root.Consumer.Config, userType, writer.Write, retryService.Retry, val.Validate, nil, logError, logInfo)
 		senderChecker := rabbitmq.NewHealthChecker(root.Publisher.Url, "rabbitmq_publisher")
 		healthHandler = health.NewHealthHandler(mongoChecker, receiverChecker, senderChecker)
 	} else {
 		healthHandler = health.NewHealthHandler(mongoChecker, receiverChecker)
-		handler = mq.NewHandlerWithRetryConfig(userType, writer.Write, validator.Validate, root.Retry, true, logError, logInfo)
+		handler = mq.NewHandlerWithRetryConfig(userType, writer.Write, val.Validate, root.Retry, true, logError, logInfo)
 	}
 
 	return &ApplicationContext{
@@ -69,11 +69,11 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 	}, nil
 }
 
-func NewUserValidator() v.Validator {
-	validator := v.NewDefaultValidator()
-	validator.CustomValidateList = append(validator.CustomValidateList, v.CustomValidate{Fn: CheckActive, Tag: "active"})
-	return validator
+func NewUserValidator() validator.Validator {
+	val := validator.NewDefaultValidator()
+	val.CustomValidateList = append(val.CustomValidateList, validator.CustomValidate{Fn: CheckActive, Tag: "active"})
+	return val
 }
-func CheckActive(fl validator.FieldLevel) bool {
+func CheckActive(fl v.FieldLevel) bool {
 	return fl.Field().Bool()
 }
