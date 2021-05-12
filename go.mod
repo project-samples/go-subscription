@@ -6,7 +6,7 @@ require (
 	github.com/core-go/config v0.1.0
 	github.com/core-go/health v0.4.5
 	github.com/core-go/mongo v0.2.2
-	github.com/core-go/mq v0.5.3
+	github.com/core-go/mq v0.5.4
 	github.com/go-playground/validator/v10 v10.5.0
 	github.com/go-stomp/stomp v2.1.4+incompatible
 	github.com/google/go-cmp v0.5.4 // indirect
