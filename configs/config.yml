@@ -17,25 +17,19 @@ retry:
   2: 7
   3: 9
 
-reader:
-  kafka:
-    brokers: tricycle-01.srvs.cloudkafka.com:9094
-    client:
-      username: ah1t9hk0
-      password: QvMB75cxJ48KYRnGfwXcRNxzALyAeb7-
-    group_id: my-group
-    topic: ah1t9hk0-default
+subscriber:
+  nats:
+    subject: ah1t9hk0-default
+    header: true
+    connection:
+      url: nats://localhost:4222
   retry:
     retry_count_name: retry
     limit_retry: 3
     goroutines: false
 
-writer:
-  brokers:
-    - tricycle-01.srvs.cloudkafka.com:9094
-    - tricycle-02.srvs.cloudkafka.com:9094
-    - tricycle-03.srvs.cloudkafka.com:9094
-  client:
-    username: ah1t9hk0
-    password: QvMB75cxJ48KYRnGfwXcRNxzALyAeb7-
-  topic: ah1t9hk0-default
+publisher:
+  subject: ah1t9hk0-default
+  header: true
+  connection:
+    url: nats://localhost:4222
