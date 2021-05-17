@@ -9,7 +9,9 @@ log:
     msg: message
 
 sql:
-  data_source_name: root:password@tcp(127.0.0.1:3306)/masterdata?parseTime=true
+  driver: mysql
+  data_source_name: devadmin:abcd1234@/masterdata?charset=utf8&parseTime=True&loc=Local
+
 retry:
   1: 5
   2: 7
