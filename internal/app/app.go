@@ -14,14 +14,14 @@ import (
 )
 
 type ApplicationContext struct {
-	HealthHandler *health.HealthHandler
+	HealthHandler *health.Handler
 	Receive       func(ctx context.Context, handle func(context.Context, *mq.Message, error) error)
 	Handler       *mq.Handler
 }
 
 func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 	log.Initialize(root.Log)
-	db, er1 := mongo.SetupMongo(ctx, root.Mongo)
+	db, er1 := mongo.Setup(ctx, root.Mongo)
 	if er1 != nil {
 		log.Error(ctx, "Cannot connect to MongoDB: Error: "+er1.Error())
 		return nil, er1
@@ -39,13 +39,13 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 		return nil, er2
 	}
 	userType := reflect.TypeOf(User{})
-	writer := mongo.NewInserter(db, "user")
+	writer := mongo.NewMongoWriter(db, "user", userType)
 	checker := validator.NewErrorChecker(NewUserValidator().Validate)
 	val := mq.NewValidator(userType, checker.Check)
 
 	mongoChecker := mongo.NewHealthChecker(db)
 	receiverChecker := kafka.NewKafkaHealthChecker(root.Reader.KafkaConsumer.Brokers, "kafka_consumer")
-	var healthHandler *health.HealthHandler
+	var healthHandler *health.Handler
 	var handler *mq.Handler
 	if root.KafkaWriter != nil {
 		sender, er3 := kafka.NewWriterByConfig(*root.KafkaWriter)
@@ -56,9 +56,9 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 		retryService := mq.NewRetryService(sender.Write, logError, logInfo)
 		handler = mq.NewHandlerByConfig(root.Reader.Config, userType, writer.Write, retryService.Retry, val.Validate, nil, logError, logInfo)
 		senderChecker := kafka.NewKafkaHealthChecker(root.KafkaWriter.Brokers, "kafka_producer")
-		healthHandler = health.NewHealthHandler(mongoChecker, receiverChecker, senderChecker)
+		healthHandler = health.NewHandler(mongoChecker, receiverChecker, senderChecker)
 	} else {
-		healthHandler = health.NewHealthHandler(mongoChecker, receiverChecker)
+		healthHandler = health.NewHandler(mongoChecker, receiverChecker)
 		handler = mq.NewHandlerWithRetryConfig(userType, writer.Write, val.Validate, root.Retry, true, logError, logInfo)
 	}
 
