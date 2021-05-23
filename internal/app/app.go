@@ -8,8 +8,8 @@ import (
 	"github.com/core-go/mongo"
 	"github.com/core-go/mq"
 	"github.com/core-go/mq/kafka"
-	"github.com/core-go/mq/log"
 	"github.com/core-go/mq/validator"
+	"github.com/core-go/mq/zap"
 	v "github.com/go-playground/validator/v10"
 )
 
