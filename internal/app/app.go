@@ -39,7 +39,8 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 		return nil, er2
 	}
 	userType := reflect.TypeOf(User{})
-	writer := mongo.NewMongoWriter(db, "user", userType)
+	mapper := mongo.NewMapper(userType)
+	writer := mongo.NewMongoWriter(db, "user", userType, mapper.ModelToDb)
 	checker := validator.NewErrorChecker(NewUserValidator().Validate)
 	val := mq.NewValidator(userType, checker.Check)
 

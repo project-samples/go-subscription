@@ -1,6 +1,9 @@
 package app
 
-import "time"
+import (
+	"github.com/core-go/mongo"
+	"time"
+)
 
 type User struct {
 	Id          string     `json:"id" gorm:"column:id;primary_key" bson:"_id" dynamodbav:"id,omitempty" firestore:"-"`
@@ -11,4 +14,8 @@ type User struct {
 	Active      bool       `json:"active,omitempty" gorm:"column:active" bson:"active,omitempty" dynamodbav:"active,omitempty" firestore:"active,omitempty" true:"A" false:"D"`
 	Locked      bool       `json:"locked,omitempty" gorm:"column:locked" bson:"locked,omitempty" dynamodbav:"locked,omitempty" firestore:"locked,omitempty" true:"1" false:"0"`
 	DateOfBirth *time.Time `json:"dateOfBirth,omitempty" gorm:"column:date_of_birth" bson:"dateOfBirth,omitempty" dynamodbav:"dateOfBirth,omitempty" firestore:"dateOfBirth,omitempty"`
+
+	Longitude *float64           `json:"longitude,omitempty" gorm:"column:longitude" bson:"-" dynamodbav:"longitude,omitempty" firestore:"longitude,omitempty"`
+	Latitude  *float64           `json:"latitude,omitempty" gorm:"column:latitude" bson:"-" dynamodbav:"latitude,omitempty" firestore:"latitude,omitempty"`
+	Location  *mongo.Coordinates `json:"-" gorm:"-" bson:"location,omitempty" dynamodbav:"-" firestore:"-"`
 }

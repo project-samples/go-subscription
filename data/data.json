@@ -1,4 +1,5 @@
 [
+    {"id": "01", "username": "user01", "longitude": 106.624169, "latitude": 106.624169, "active": true, "locked": false, "dateOfBirth": "2009-12-31T23:59:59.999+07:00", "email": "test@gmail.com", "url": "http://test.com", "phone": "0987654321"},
     {"id": "01", "username": "user01", "active": true, "locked": false, "dateOfBirth": "2009-12-31T23:59:59.999+07:00", "email": "test@gmail.com", "url": "http://test.com", "phone": "0987654321"},
     {"id": "01", "username": "user01", "active": false, "locked": false, "dateOfBirth": "2009-12-31T23:59:59.999+07:00", "email": "test@gmail.com", "url": "http://test.com", "phone": "0987654321"},
     {"id": "01", "username": "user01", "active": false, "locked": false, "dateOfBirth": "2009-12-31T23:59:59.999+07:00", "email": "test", "url": "test", "phone": "abcd"},
