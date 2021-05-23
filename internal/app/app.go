@@ -10,12 +10,12 @@ import (
 	"github.com/core-go/mq/sarama"
 	"github.com/core-go/mq/validator"
 	"github.com/core-go/sql"
-	val "github.com/go-playground/validator/v10"
+	v "github.com/go-playground/validator/v10"
 	_ "github.com/go-sql-driver/mysql"
 )
 
 type ApplicationContext struct {
-	HealthHandler *health.HealthHandler
+	HealthHandler *health.Handler
 	Receive       func(ctx context.Context, handle func(context.Context, *mq.Message, error) error)
 	Handler       *mq.Handler
 }
@@ -24,7 +24,7 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 	log.Initialize(root.Log)
 	db, er1 := sql.OpenByConfig(root.Sql)
 	if er1 != nil {
-		log.Error(ctx, "Cannot connect to MySQL: Error: "+er1.Error())
+		log.Error(ctx, "Cannot connect to SQL: Error: "+er1.Error())
 		return nil, er1
 	}
 
@@ -46,7 +46,7 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 
 	sqlChecker := sql.NewHealthChecker(db)
 	receiverChecker := kafka.NewKafkaHealthChecker(root.Reader.KafkaConsumer.Brokers, "kafka_consumer")
-	var healthHandler *health.HealthHandler
+	var healthHandler *health.Handler
 	var handler *mq.Handler
 	if root.KafkaWriter != nil {
 		sender, er3 := kafka.NewWriterByConfig(*root.KafkaWriter)
@@ -57,9 +57,9 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 		retryService := mq.NewRetryService(sender.Write, logError, logInfo)
 		handler = mq.NewHandlerByConfig(root.Reader.Config, userType, writer.Write, retryService.Retry, val.Validate, nil, logError, logInfo)
 		senderChecker := kafka.NewKafkaHealthChecker(root.KafkaWriter.Brokers, "kafka_producer")
-		healthHandler = health.NewHealthHandler(sqlChecker, receiverChecker, senderChecker)
+		healthHandler = health.NewHandler(sqlChecker, receiverChecker, senderChecker)
 	} else {
-		healthHandler = health.NewHealthHandler(sqlChecker, receiverChecker)
+		healthHandler = health.NewHandler(sqlChecker, receiverChecker)
 		handler = mq.NewHandlerWithRetryConfig(userType, writer.Write, val.Validate, root.Retry, true, logError, logInfo)
 	}
 
@@ -75,6 +75,6 @@ func NewUserValidator() validator.Validator {
 	val.CustomValidateList = append(val.CustomValidateList, validator.CustomValidate{Fn: CheckActive, Tag: "active"})
 	return val
 }
-func CheckActive(fl val.FieldLevel) bool {
+func CheckActive(fl v.FieldLevel) bool {
 	return fl.Field().Bool()
 }
