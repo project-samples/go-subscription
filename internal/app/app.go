@@ -7,8 +7,8 @@ import (
 	"github.com/core-go/health"
 	"github.com/core-go/mongo"
 	"github.com/core-go/mq"
-	"github.com/core-go/mq/kafka"
 	"github.com/core-go/mq/log"
+	"github.com/core-go/mq/pubsub"
 	"github.com/core-go/mq/validator"
 	v "github.com/go-playground/validator/v10"
 )
@@ -33,7 +33,7 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 		logInfo = log.InfoMsg
 	}
 
-	receiver, er2 := kafka.NewReaderByConfig(root.Reader.KafkaConsumer, true)
+	receiver, er2 := pubsub.NewSubscriberByConfig(ctx, root.Sub.Subscriber, true)
 	if er2 != nil {
 		log.Error(ctx, "Cannot create a new receiver. Error: "+er2.Error())
 		return nil, er2
@@ -44,18 +44,18 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 	val := mq.NewValidator(userType, checker.Check)
 
 	mongoChecker := mongo.NewHealthChecker(db)
-	receiverChecker := kafka.NewKafkaHealthChecker(root.Reader.KafkaConsumer.Brokers, "kafka_consumer")
+	receiverChecker := pubsub.NewSubHealthChecker("pubsub_subscriber", receiver.Client, root.Sub.Subscriber.SubscriptionId)
 	var healthHandler *health.Handler
 	var handler *mq.Handler
-	if root.KafkaWriter != nil {
-		sender, er3 := kafka.NewWriterByConfig(*root.KafkaWriter)
+	if root.Pub != nil {
+		sender, er3 := pubsub.NewPublisherByConfig(ctx, *root.Pub)
 		if er3 != nil {
 			log.Error(ctx, "Cannot new a new sender. Error:"+er3.Error())
 			return nil, er3
 		}
-		retryService := mq.NewRetryService(sender.Write, logError, logInfo)
-		handler = mq.NewHandlerByConfig(root.Reader.Config, userType, writer.Write, retryService.Retry, val.Validate, nil, logError, logInfo)
-		senderChecker := kafka.NewKafkaHealthChecker(root.KafkaWriter.Brokers, "kafka_producer")
+		retryService := mq.NewRetryService(sender.Publish, logError, logInfo)
+		handler = mq.NewHandlerByConfig(root.Sub.Config, userType, writer.Write, retryService.Retry, val.Validate, nil, logError, logInfo)
+		senderChecker := pubsub.NewPubHealthChecker("pubsub_publisher", sender.Client, root.Pub.TopicId)
 		healthHandler = health.NewHandler(mongoChecker, receiverChecker, senderChecker)
 	} else {
 		healthHandler = health.NewHandler(mongoChecker, receiverChecker)
@@ -64,7 +64,7 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 
 	return &ApplicationContext{
 		HealthHandler: healthHandler,
-		Receive:       receiver.Read,
+		Receive:       receiver.Subscribe,
 		Handler:       handler,
 	}, nil
 }
