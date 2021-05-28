@@ -4,38 +4,26 @@ server:
 
 log:
   level: info
-  map:
-    time: "@timestamp"
-    msg: message
 
-mongo:
-  uri: mongodb+srv://dbUser:Demoaccount1@projectdemo.g0lah.mongodb.net
-  database: masterdata
+sql:
+  data_source_name: root:Mysqltuan2021@tcp(127.0.0.1:3306)/masterdata?parseTime=true
 
 retry:
   1: 5
   2: 7
   3: 9
 
-reader:
-  kafka:
-    brokers: tricycle-01.srvs.cloudkafka.com:9094
-    client:
-      username: ah1t9hk0
-      password: QvMB75cxJ48KYRnGfwXcRNxzALyAeb7-
-    group_id: my-group
-    topic: ah1t9hk0-default
-  retry:
-    retry_count_name: retry
-    limit_retry: 3
-    goroutines: false
-
-writer:
-  brokers:
-    - tricycle-01.srvs.cloudkafka.com:9094
-    - tricycle-02.srvs.cloudkafka.com:9094
-    - tricycle-03.srvs.cloudkafka.com:9094
-  client:
-    username: ah1t9hk0
-    password: QvMB75cxJ48KYRnGfwXcRNxzALyAeb7-
-  topic: ah1t9hk0-default
+ibmmq:
+  subscriber_config:
+    queue_manager: "Test"
+    queue_name: "test"
+    channel_name: "CLOUD.ADMIN.SVRCONN"
+    connection_name: "test-764e.qm.au-syd.mq.appdomain.cloud(31723)"
+  queue_config:
+    queue_manager: "Test"
+    queue_name: "test"
+    channel_name: "CLOUD.ADMIN.SVRCONN"
+    connection_name: "test-764e.qm.au-syd.mq.appdomain.cloud(31723)"
+  mq_auth:
+    user_id: "pnhattuan"
+    password: "-0McyERIrfgksLBu1kdHYEYpN0T4aSoOiCk2jzyfmzOm"

@@ -2,22 +2,22 @@ package app
 
 import (
 	"github.com/core-go/health/server"
-	"github.com/core-go/mongo"
 	"github.com/core-go/mq"
-	"github.com/core-go/mq/kafka"
+	ibmmq "github.com/core-go/mq/ibm-mq"
 	"github.com/core-go/mq/log"
+	"github.com/core-go/sql"
 )
 
 type Root struct {
-	Server      server.ServerConf   `mapstructure:"server"`
-	Log         log.Config          `mapstructure:"log"`
-	Mongo       mongo.MongoConfig   `mapstructure:"mongo"`
-	Retry       *mq.RetryConfig     `mapstructure:"retry"`
-	Reader      ReaderConfig        `mapstructure:"reader"`
-	KafkaWriter *kafka.WriterConfig `mapstructure:"writer"`
+	Server server.ServerConf `mapstructure:"server"`
+	Log    log.Config        `mapstructure:"log"`
+	Sql    sql.Config        `mapstructure:"sql"`
+	Retry  *mq.RetryConfig   `mapstructure:"retry"`
+	IBMMQ  IBMMQConfig       `mapstructure:"ibmmq"`
 }
 
-type ReaderConfig struct {
-	KafkaConsumer kafka.ReaderConfig `mapstructure:"kafka"`
-	Config        mq.HandlerConfig   `mapstructure:"retry"`
+type IBMMQConfig struct {
+	QueueConfig      ibmmq.QueueConfig      `mapstructure:"queue_config"`
+	SubscriberConfig ibmmq.SubscriberConfig `mapstructure:"subscriber_config"`
+	MQAuth           ibmmq.MQAuth           `mapstucture:"mq_auth"`
 }
