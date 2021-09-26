@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"reflect"
+	"strings"
 
 	"github.com/core-go/health"
 	"github.com/core-go/mongo"
@@ -11,11 +12,12 @@ import (
 	"github.com/core-go/mq/log"
 	"github.com/core-go/mq/validator"
 	v "github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
 )
 
 type ApplicationContext struct {
 	HealthHandler *health.Handler
-	Receive       func(ctx context.Context, handle func(context.Context, *mq.Message, error) error)
+	Receive       func(ctx context.Context, handle func(context.Context, []byte, map[string]string, error) error)
 	Handler       *mq.Handler
 }
 
@@ -33,7 +35,7 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 		logInfo = log.InfoMsg
 	}
 
-	receiver, er2 := kafka.NewReaderByConfig(root.Reader.KafkaConsumer, true)
+	receiver, er2 := kafka.NewSimpleReaderByConfig(root.Reader.KafkaConsumer, true)
 	if er2 != nil {
 		log.Error(ctx, "Cannot create a new receiver. Error: "+er2.Error())
 		return nil, er2
@@ -48,18 +50,18 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 	var healthHandler *health.Handler
 	var handler *mq.Handler
 	if root.KafkaWriter != nil {
-		sender, er3 := kafka.NewWriterByConfig(*root.KafkaWriter)
+		sender, er3 := kafka.NewWriterByConfig(*root.KafkaWriter, Generate)
 		if er3 != nil {
 			log.Error(ctx, "Cannot new a new sender. Error:"+er3.Error())
 			return nil, er3
 		}
 		retryService := mq.NewRetryService(sender.Write, logError, logInfo)
-		handler = mq.NewHandlerByConfig(root.Reader.Config, userType, writer.Write, retryService.Retry, val.Validate, nil, logError, logInfo)
+		handler = mq.NewHandlerByConfig(root.Reader.Config, writer.Write, &userType, retryService.Retry, val.Validate, nil, logError, logInfo)
 		senderChecker := kafka.NewKafkaHealthChecker(root.KafkaWriter.Brokers, "kafka_producer")
 		healthHandler = health.NewHandler(mongoChecker, receiverChecker, senderChecker)
 	} else {
 		healthHandler = health.NewHandler(mongoChecker, receiverChecker)
-		handler = mq.NewHandlerWithRetryConfig(userType, writer.Write, val.Validate, root.Retry, true, logError, logInfo)
+		handler = mq.NewHandlerWithRetryConfig(writer.Write, &userType, val.Validate, root.Retry, true, logError, logInfo)
 	}
 
 	return &ApplicationContext{
@@ -76,4 +78,7 @@ func NewUserValidator() validator.Validator {
 }
 func CheckActive(fl v.FieldLevel) bool {
 	return fl.Field().Bool()
+}
+func Generate() string {
+	return strings.Replace(uuid.New().String(), "-", "", -1)
 }
