@@ -15,7 +15,7 @@ import (
 
 type ApplicationContext struct {
 	HealthHandler *health.Handler
-	Receive       func(ctx context.Context, handle func(context.Context, *mq.Message, error) error)
+	Receive       func(ctx context.Context, handle func(context.Context, []byte, map[string]string, error) error)
 	Handler       *mq.Handler
 }
 
@@ -33,12 +33,12 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 		logInfo = log.InfoMsg
 	}
 
-	receiver , er2 := ibmmq.NewSubscriberByConfig(root.IBMMQ.SubscriberConfig,root.IBMMQ.MQAuth)
+	receiver , er2 := ibmmq.NewSimpleSubscriberByConfig(root.IBMMQ.SubscriberConfig,root.IBMMQ.MQAuth)
 	if er2 != nil {
 		log.Error(ctx,"Cannot create a new receiver. Error: " + er2.Error())
 	}
 	userType := reflect.TypeOf(User{})
-	writer := sql.NewInserter(db, "users")
+	writer := sql.NewInserter(db, "users", userType)
 	checker := validator.NewErrorChecker(NewUserValidator().Validate)
 	validator := mq.NewValidator(userType, checker.Check)
 
@@ -46,7 +46,7 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 	receiverChecker := ibmmq.NewHealthChecker(receiver.QueueManager, "ibmmq_subscriber")
 
 	healthHandler := health.NewHandler(sqlChecker, receiverChecker)
-	handler := mq.NewHandlerWithRetryConfig(userType, writer.Write, validator.Validate, root.Retry, true, logError, logInfo)
+	handler := mq.NewHandlerWithRetryConfig(writer.Write, &userType, validator.Validate, root.Retry, true, logError, logInfo)
 
 	return &ApplicationContext{
 		HealthHandler: healthHandler,
