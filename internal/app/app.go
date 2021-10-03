@@ -33,7 +33,7 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 		logInfo = log.InfoMsg
 	}
 
-	receiver , er2 := ibmmq.NewSimpleSubscriberByConfig(root.IBMMQ.SubscriberConfig,root.IBMMQ.MQAuth)
+	receiver, er2 := ibmmq.NewSimpleSubscriberByConfig(root.IBMMQ.SubscriberConfig, root.IBMMQ.MQAuth, log.ErrorMsg)
 	if er2 != nil {
 		log.Error(ctx,"Cannot create a new receiver. Error: " + er2.Error())
 	}
