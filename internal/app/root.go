@@ -1,11 +1,12 @@
 package app
 
 import (
-	"github.com/core-go/health/server"
 	"github.com/core-go/mongo"
-	"github.com/core-go/mq"
-	"github.com/core-go/mq/log"
-	"github.com/core-go/mq/sarama"
+
+	"go-service/pkg/kafka"
+	"go-service/pkg/log"
+	"go-service/pkg/mq"
+	"go-service/pkg/server"
 )
 
 type Root struct {

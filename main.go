@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 	"github.com/core-go/config"
-	"github.com/core-go/health/server"
 
 	"go-service/internal/app"
+	"go-service/pkg/server"
 )
 
 func main() {

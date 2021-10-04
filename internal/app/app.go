@@ -5,14 +5,15 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/core-go/health"
 	mgo "github.com/core-go/mongo"
-	"github.com/core-go/mq"
-	"github.com/core-go/mq/log"
-	"github.com/core-go/mq/sarama"
-	v "github.com/core-go/mq/validator"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
+
+	"go-service/pkg/health"
+	"go-service/pkg/kafka"
+	"go-service/pkg/log"
+	"go-service/pkg/mq"
+	v "go-service/pkg/validator"
 )
 
 type ApplicationContext struct {
