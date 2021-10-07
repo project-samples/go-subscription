@@ -1,0 +1,17 @@
+// create database in cassandra query
+CREATE KEYSPACE IF NOT EXISTS user WITH replication = {
+	'class' : 'SimpleStrategy',
+	'replication_factor' : 1
+};
+
+CREATE TABLE IF NOT EXISTS user.user (
+     id varchar,
+     username varchar,
+     active boolean,
+     locked boolean,
+     date_of_birth timestamp,
+     email varchar,
+     url varchar,
+     phone varchar,
+     PRIMARY KEY(id )
+);

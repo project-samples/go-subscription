@@ -12,6 +12,11 @@ mongo:
   uri: mongodb+srv://dbUser:Demoaccount1@projectdemo.g0lah.mongodb.net
   database: masterdata
 
+cassandra:
+  uri: 127.0.0.1
+  username:
+  password:
+
 retry:
   1: 5
   2: 7

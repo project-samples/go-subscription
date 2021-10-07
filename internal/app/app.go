@@ -5,13 +5,15 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/core-go/cassandra"
 	"github.com/core-go/health"
-	"github.com/core-go/mongo"
+	cas "github.com/core-go/health/cassandra"
 	"github.com/core-go/mq"
 	"github.com/core-go/mq/kafka"
 	"github.com/core-go/mq/log"
 	"github.com/core-go/mq/validator"
 	v "github.com/go-playground/validator/v10"
+	"github.com/gocql/gocql"
 	"github.com/google/uuid"
 )
 
@@ -23,9 +25,14 @@ type ApplicationContext struct {
 
 func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 	log.Initialize(root.Log)
-	db, er1 := mongo.Setup(ctx, root.Mongo)
+	cluster := gocql.NewCluster(root.Cassandra.Uri)
+	cluster.Authenticator = gocql.PasswordAuthenticator{
+		Username: root.Cassandra.Username,
+		Password: root.Cassandra.Password,
+	}
+	session, er1 := cluster.CreateSession()
 	if er1 != nil {
-		log.Error(ctx, "Cannot connect to MongoDB: Error: "+er1.Error())
+		log.Error(ctx, "Cannot connect to Cassandra, Error: " + er1.Error())
 		return nil, er1
 	}
 
@@ -41,11 +48,11 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 		return nil, er2
 	}
 	userType := reflect.TypeOf(User{})
-	writer := mongo.NewMongoWriter(db, "user", userType)
+	writer := cassandra.NewCassandraWriter(session, "user.user", userType)
 	checker := validator.NewErrorChecker(NewUserValidator().Validate)
 	val := mq.NewValidator(userType, checker.Check)
 
-	mongoChecker := mongo.NewHealthChecker(db)
+	cassandraChecker := cas.NewHealthChecker(cluster)
 	receiverChecker := kafka.NewKafkaHealthChecker(root.Reader.KafkaConsumer.Brokers, "kafka_consumer")
 	var healthHandler *health.Handler
 	var handler *mq.Handler
@@ -58,9 +65,9 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 		retryService := mq.NewRetryService(sender.Write, logError, logInfo)
 		handler = mq.NewHandlerByConfig(root.Reader.Config, writer.Write, &userType, retryService.Retry, val.Validate, nil, logError, logInfo)
 		senderChecker := kafka.NewKafkaHealthChecker(root.KafkaWriter.Brokers, "kafka_producer")
-		healthHandler = health.NewHandler(mongoChecker, receiverChecker, senderChecker)
+		healthHandler = health.NewHandler(cassandraChecker, receiverChecker, senderChecker)
 	} else {
-		healthHandler = health.NewHandler(mongoChecker, receiverChecker)
+		healthHandler = health.NewHandler(cassandraChecker, receiverChecker)
 		handler = mq.NewHandlerWithRetryConfig(writer.Write, &userType, val.Validate, root.Retry, true, logError, logInfo)
 	}
 
