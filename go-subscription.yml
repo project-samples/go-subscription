@@ -1,0 +1,24 @@
+version: "3.9"
+services:
+  app:
+    container_name: go-subscription-ibmmq
+    build:
+      dockerfile: docker/docker-go-subscription
+      context: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./:/app
+
+  mysql:
+    container_name: mysql
+    image: mysql:latest
+    environment:
+      MYSQL_ROOT_PASSWORD: 12345678x@X
+    ports:
+      - "3306:3306"
+
+networks:
+  default:
+    external: true
+    name: subscription

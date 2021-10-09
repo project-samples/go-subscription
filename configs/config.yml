@@ -6,7 +6,8 @@ log:
   level: info
 
 sql:
-  data_source_name: root:Mysqltuan2021@tcp(127.0.0.1:3306)/masterdata?parseTime=true
+  driver: mysql
+  data_source_name: root:12345678x@X@tcp(mysql:3306)/masterdata?charset=utf8&parseTime=True&loc=Local
 
 retry:
   1: 5
@@ -14,16 +15,19 @@ retry:
   3: 9
 
 ibmmq:
-  subscriber_config:
-    queue_manager: "Test"
-    queue_name: "test"
-    channel_name: "CLOUD.ADMIN.SVRCONN"
-    connection_name: "test-764e.qm.au-syd.mq.appdomain.cloud(31723)"
-  queue_config:
-    queue_manager: "Test"
-    queue_name: "test"
-    channel_name: "CLOUD.ADMIN.SVRCONN"
-    connection_name: "test-764e.qm.au-syd.mq.appdomain.cloud(31723)"
   mq_auth:
-    user_id: "pnhattuan"
-    password: "-0McyERIrfgksLBu1kdHYEYpN0T4aSoOiCk2jzyfmzOm"
+    user_id: "app"
+    password: "passw0rd"
+  subscriber_config:
+    manager_name: "QM1"
+    channel_name: "DEV.APP.SVRCONN"
+    connection_name: "ibmcom_mq(1414)"
+    queue_name: "DEV.QUEUE.1"
+    topic: "DEV.BASE.TOPIC"
+    wait_interval: 0
+  queue_config:
+    put: true
+    manager_name: "QM1"
+    channel_name: "DEV.APP.SVRCONN"
+    connection_name: "ibmcom_mq(1414)"
+    queue_name: "DEV.QUEUE.1"

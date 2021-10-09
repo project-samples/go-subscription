@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"github.com/core-go/health"
 	"github.com/core-go/mq"
 	"github.com/core-go/mq/ibm-mq"
@@ -20,6 +21,7 @@ type ApplicationContext struct {
 }
 
 func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
+	fmt.Println(root)
 	log.Initialize(root.Log)
 	db, er1 := sql.OpenByConfig(root.Sql)
 	if er1 != nil {
@@ -32,21 +34,20 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 	if log.IsInfoEnable() {
 		logInfo = log.InfoMsg
 	}
-
 	receiver, er2 := ibmmq.NewSimpleSubscriberByConfig(root.IBMMQ.SubscriberConfig, root.IBMMQ.MQAuth, log.ErrorMsg)
 	if er2 != nil {
-		log.Error(ctx,"Cannot create a new receiver. Error: " + er2.Error())
+		log.Error(ctx, "Cannot create a new receiver. Error: "+er2.Error())
 	}
 	userType := reflect.TypeOf(User{})
-	writer := sql.NewInserter(db, "users", userType)
+	writer := sql.NewInserter(db, "", userType)
 	checker := validator.NewErrorChecker(NewUserValidator().Validate)
-	validator := mq.NewValidator(userType, checker.Check)
+	newValidator := mq.NewValidator(userType, checker.Check)
 
 	sqlChecker := sql.NewHealthChecker(db)
-	receiverChecker := ibmmq.NewHealthChecker(receiver.QueueManager, "ibmmq_subscriber")
+	receiverChecker := ibmmq.NewHealthCheckerByConfig(&root.IBMMQ.QueueConfig, &root.IBMMQ.MQAuth, root.IBMMQ.SubscriberConfig.Topic)
 
 	healthHandler := health.NewHandler(sqlChecker, receiverChecker)
-	handler := mq.NewHandlerWithRetryConfig(writer.Write, &userType, validator.Validate, root.Retry, true, logError, logInfo)
+	handler := mq.NewHandlerWithRetryConfig(writer.Write, &userType, newValidator.Validate, root.Retry, true, nil, logError, logInfo)
 
 	return &ApplicationContext{
 		HealthHandler: healthHandler,
@@ -62,4 +63,9 @@ func NewUserValidator() validator.Validator {
 }
 func CheckActive(fl v.FieldLevel) bool {
 	return fl.Field().Bool()
+}
+
+func Write(ctx context.Context, model interface{}) error {
+	fmt.Println(model)
+	return nil
 }

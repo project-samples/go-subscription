@@ -1,0 +1,29 @@
+FROM golang:1.17.1
+
+WORKDIR /app
+
+COPY ibm /ibm
+
+COPY go.mod ./
+COPY go.sum ./
+RUN go mod download
+
+COPY ./ ./
+
+RUN mkdir -p /opt/mqm \
+  && chmod a+rx /opt/mqm
+
+RUN cd /opt/mqm \
+ && tar -zxf /ibm/9.1.5.0-IBM-MQC-Redist-LinuxX64.tar.gz
+
+ENV MQ_INSTALLATION_PATH=/opt/mqm
+ENV CGO_CFLAGS="-I$MQ_INSTALLATION_PATH/inc"
+ENV CGO_LDFLAGS="-L$MQ_INSTALLATION_PATH/lib64 -Wl,-rpath,$MQ_INSTALLATION_PATH/lib64"
+
+# MQ use default HOME for creating some temp files
+# Docker golang:1.11.2 does not allow to write to HOME default, so set HOME to /tmp to work around this
+ENV HOME=/tmp
+
+EXPOSE 8080
+
+CMD ["tail", "-f", "/etc/hosts"]

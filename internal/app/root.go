@@ -3,7 +3,7 @@ package app
 import (
 	"github.com/core-go/health/server"
 	"github.com/core-go/mq"
-	ibmmq "github.com/core-go/mq/ibm-mq"
+	"github.com/core-go/mq/ibm-mq"
 	"github.com/core-go/mq/log"
 	"github.com/core-go/sql"
 )
@@ -19,5 +19,5 @@ type Root struct {
 type IBMMQConfig struct {
 	QueueConfig      ibmmq.QueueConfig      `mapstructure:"queue_config"`
 	SubscriberConfig ibmmq.SubscriberConfig `mapstructure:"subscriber_config"`
-	MQAuth           ibmmq.MQAuth           `mapstucture:"mq_auth"`
+	MQAuth           ibmmq.MQAuth           `mapstructure:"mq_auth"`
 }
