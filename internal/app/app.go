@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"net/http"
 	"reflect"
 	"strings"
 
@@ -16,9 +17,9 @@ import (
 )
 
 type ApplicationContext struct {
-	HealthHandler *health.Handler
-	Receive       func(ctx context.Context, handle func(context.Context, []byte, map[string]string, error) error)
-	Handler       *mq.Handler
+	Check   func(w http.ResponseWriter, r *http.Request)
+	Receive func(ctx context.Context, handle func(context.Context, []byte, map[string]string, error) error)
+	Handle  func(ctx context.Context, data []byte, header map[string]string, err error) error
 }
 
 func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
@@ -61,13 +62,13 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 		healthHandler = health.NewHandler(mongoChecker, receiverChecker, senderChecker)
 	} else {
 		healthHandler = health.NewHandler(mongoChecker, receiverChecker)
-		handler = mq.NewHandlerWithRetryConfig(writer.Write, &userType, val.Validate, root.Retry, true, logError, logInfo)
+		handler = mq.NewHandlerWithRetryConfig(writer.Write, &userType, val.Validate, root.Retry, true, nil, logError, logInfo)
 	}
 
 	return &ApplicationContext{
-		HealthHandler: healthHandler,
-		Receive:       receiver.Read,
-		Handler:       handler,
+		Check:   healthHandler.Check,
+		Receive: receiver.Read,
+		Handle:  handler.Handle,
 	}, nil
 }
 
