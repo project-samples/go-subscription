@@ -10,9 +10,9 @@ log:
 
 sql:
   driver: mysql
-  data_source_name: devadmin:abcd1234@/masterdata?charset=utf8&parseTime=True&loc=Local
+  data_source_name: root:abcd1234@/masterdata2?charset=utf8&parseTime=True&loc=Local
 
-retry:
+retry2:
   1: 5
   2: 7
   3: 9
@@ -30,7 +30,7 @@ reader:
     limit_retry: 3
     goroutines: false
 
-writer:
+writer2:
   brokers:
     - tricycle-01.srvs.cloudkafka.com:9094
     - tricycle-02.srvs.cloudkafka.com:9094
