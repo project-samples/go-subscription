@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"net/http"
 	"reflect"
 
 	"github.com/core-go/health"
@@ -14,9 +15,9 @@ import (
 )
 
 type ApplicationContext struct {
-	HealthHandler *health.Handler
-	Receive       func(ctx context.Context, handle func(context.Context, []byte, map[string]string, error) error)
-	Handler       *mq.Handler
+	Check   func(w http.ResponseWriter, r *http.Request)
+	Receive func(ctx context.Context, handle func(context.Context, []byte, map[string]string, error) error)
+	Handle  func(ctx context.Context, data []byte, header map[string]string, err error) error
 }
 
 func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
@@ -63,9 +64,9 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 	}
 
 	return &ApplicationContext{
-		HealthHandler: healthHandler,
-		Receive:       receiver.Subscribe,
-		Handler:       handler,
+		Check:   healthHandler.Check,
+		Receive: receiver.Subscribe,
+		Handle:  handler.Handle,
 	}, nil
 }
 
