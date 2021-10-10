@@ -11,13 +11,14 @@ import (
 	"github.com/core-go/sql"
 	v "github.com/go-playground/validator/v10"
 	_ "github.com/go-sql-driver/mysql"
+	"net/http"
 	"reflect"
 )
 
 type ApplicationContext struct {
-	HealthHandler *health.Handler
-	Receive       func(ctx context.Context, handle func(context.Context, []byte, map[string]string, error) error)
-	Handler       *mq.Handler
+	Check   func(w http.ResponseWriter, r *http.Request)
+	Receive func(ctx context.Context, handle func(context.Context, []byte, map[string]string, error) error)
+	Handle  func(ctx context.Context, data []byte, header map[string]string, err error) error
 }
 
 func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
@@ -50,9 +51,9 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 	handler := mq.NewHandlerWithRetryConfig(writer.Write, &userType, newValidator.Validate, root.Retry, true, nil, logError, logInfo)
 
 	return &ApplicationContext{
-		HealthHandler: healthHandler,
-		Receive:       receiver.Subscribe,
-		Handler:       handler,
+		Check:   healthHandler.Check,
+		Receive: receiver.Subscribe,
+		Handle:  handler.Handle,
 	}, nil
 }
 
@@ -63,9 +64,4 @@ func NewUserValidator() validator.Validator {
 }
 func CheckActive(fl v.FieldLevel) bool {
 	return fl.Field().Bool()
-}
-
-func Write(ctx context.Context, model interface{}) error {
-	fmt.Println(model)
-	return nil
 }

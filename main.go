@@ -20,9 +20,9 @@ func main() {
 	if er2 != nil {
 		panic(er2)
 	}
-	go applicationContext.Receive(ctx, applicationContext.Handler.Handle)
+	go applicationContext.Receive(ctx, applicationContext.Handle)
 
-	err := server.Serve(conf.Server, applicationContext.HealthHandler.Check)
+	err := server.Serve(conf.Server, applicationContext.Check)
 	if err != nil {
 		fmt.Println(err)
 		return
