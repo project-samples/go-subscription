@@ -21,6 +21,6 @@ func main() {
 		panic(er2)
 	}
 
-	go server.Serve(conf.Server, app.HealthHandler.Check)
-	app.Receive(ctx, app.Handler.Handle)
+	go server.Serve(conf.Server, app.Check)
+	app.Receive(ctx, app.Handle)
 }

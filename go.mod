@@ -10,5 +10,5 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/xdg/scram v1.0.3
 	go.mongodb.org/mongo-driver v1.7.2 // indirect
-	go.uber.org/zap v1.10.0
+	go.uber.org/zap v1.19.1
 )
