@@ -9,7 +9,7 @@ import (
 	"github.com/core-go/health"
 	"github.com/core-go/mongo"
 	"github.com/core-go/mq"
-	"github.com/core-go/mq/kafka"
+	kafka "github.com/core-go/mq/confluent"
 	"github.com/core-go/mq/log"
 	"github.com/core-go/mq/validator"
 	v "github.com/go-playground/validator/v10"
@@ -36,7 +36,7 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 		logInfo = log.InfoMsg
 	}
 
-	receiver, er2 := kafka.NewSimpleReaderByConfig(root.Reader.KafkaConsumer, true)
+	receiver, er2 := kafka.NewSimpleConsumerByConfig(root.Reader.KafkaConsumer)
 	if er2 != nil {
 		log.Error(ctx, "Cannot create a new receiver. Error: "+er2.Error())
 		return nil, er2
@@ -51,14 +51,14 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 	var healthHandler *health.Handler
 	var handler *mq.Handler
 	if root.KafkaWriter != nil {
-		sender, er3 := kafka.NewWriterByConfig(*root.KafkaWriter, Generate)
+		sender, er3 := kafka.NewProducerByConfig(*root.KafkaWriter)
 		if er3 != nil {
 			log.Error(ctx, "Cannot new a new sender. Error:"+er3.Error())
 			return nil, er3
 		}
-		retryService := mq.NewRetryService(sender.Write, logError, logInfo)
+		retryService := mq.NewRetryService(sender.Produce, logError, logInfo)
 		handler = mq.NewHandlerByConfig(root.Reader.Config, writer.Write, &userType, retryService.Retry, val.Validate, nil, logError, logInfo)
-		senderChecker := kafka.NewKafkaHealthChecker(root.KafkaWriter.Brokers, "kafka_producer")
+		senderChecker := kafka.NewKafkaHealthChecker((*root.KafkaWriter).Brokers, "kafka_producer")
 		healthHandler = health.NewHandler(mongoChecker, receiverChecker, senderChecker)
 	} else {
 		healthHandler = health.NewHandler(mongoChecker, receiverChecker)
@@ -67,7 +67,7 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 
 	return &ApplicationContext{
 		Check:   healthHandler.Check,
-		Receive: receiver.Read,
+		Receive: receiver.Consume,
 		Handle:  handler.Handle,
 	}, nil
 }

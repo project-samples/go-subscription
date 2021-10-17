@@ -25,6 +25,7 @@ reader:
       password: QvMB75cxJ48KYRnGfwXcRNxzALyAeb7-
     group_id: my-group
     topic: ah1t9hk0-default
+    ack: true
   retry:
     retry_count_name: retry
     limit_retry: 3
