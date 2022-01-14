@@ -9,8 +9,24 @@ log:
     msg: message
 
 mongo:
-  uri: mongodb+srv://dbUser:Demoaccount1@projectdemo.g0lah.mongodb.net
+  uri: mongodb://localhost:27017
   database: masterdata
+
+avro: '
+  {
+      "type": "record",
+      "name": "user",
+      "fields": [
+          {"name":"id","type":"string"},
+          {"name":"username","type":"string"},
+          {"name":"email","type":"string"},
+          {"name":"url", "type":"string"},
+          {"name":"phone","type":"string"},
+          {"name":"active","type":"boolean"},
+          {"name":"locked","type":"boolean"},
+          {"name":"dateOfBirth","type":"string"}
+      ]
+  }'
 
 retry:
   1: 5
