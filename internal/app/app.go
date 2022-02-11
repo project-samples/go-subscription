@@ -51,18 +51,18 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 	var healthHandler *health.Handler
 	var handler *mq.Handler
 	if root.KafkaWriter != nil {
-		sender, er3 := kafka.NewProducerByConfig(*root.KafkaWriter)
+		sender, er3 := kafka.NewProducerByConfig(*root.KafkaWriter, nil)
 		if er3 != nil {
 			log.Error(ctx, "Cannot new a new sender. Error:"+er3.Error())
 			return nil, er3
 		}
 		retryService := mq.NewRetryService(sender.Produce, logError, logInfo)
-		handler = mq.NewHandlerByConfig(root.Reader.Config, writer.Write, &userType, retryService.Retry, val.Validate, nil, logError, logInfo)
+		handler = mq.NewHandlerByConfig(root.Reader.Config, writer.Write, &userType, retryService.Retry, val.Validate, nil, nil, logError, logInfo)
 		senderChecker := kafka.NewKafkaHealthChecker((*root.KafkaWriter).Brokers, "kafka_producer")
 		healthHandler = health.NewHandler(mongoChecker, receiverChecker, senderChecker)
 	} else {
 		healthHandler = health.NewHandler(mongoChecker, receiverChecker)
-		handler = mq.NewHandlerWithRetryConfig(writer.Write, &userType, val.Validate, root.Retry, true, nil, logError, logInfo)
+		handler = mq.NewHandlerWithRetryConfig(writer.Write, &userType, val.Validate, root.Retry, true, nil, nil, logError, logInfo)
 	}
 
 	return &ApplicationContext{

@@ -16,3 +16,8 @@
 - [DynamoDB](https://github.com/project-samples/go-subscription/tree/dynamodb)
 - Cassandra: [Kafka](https://github.com/project-samples/go-subscription/tree/cassandra) and [Google Pub/Sub](https://github.com/project-samples/go-subscription/tree/pubsub_cassandra)
 - [Elastic Search](https://github.com/project-samples/go-subscription/tree/elasticsearch)
+
+### How to build:
+```shell
+go build -buildmode=exe main.go
+```
