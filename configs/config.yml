@@ -1,6 +1,6 @@
 server:
   name: go-subscription
-  port: 8080
+  port: 8086
 
 log:
   level: info
