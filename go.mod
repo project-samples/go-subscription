@@ -6,9 +6,9 @@ require (
 	github.com/Shopify/sarama v1.29.1 // indirect
 	github.com/core-go/config v0.1.0
 	github.com/core-go/health v0.4.7
-	github.com/core-go/mongo v0.2.7
-	github.com/core-go/mq v0.5.19
-	github.com/go-playground/validator/v10 v10.9.0
+	github.com/core-go/mongo v0.2.9
+	github.com/core-go/mq v0.6.2
+	github.com/go-playground/validator/v10 v10.10.0
 	github.com/google/uuid v1.3.0
 	github.com/hamba/avro v1.6.3
 	github.com/sirupsen/logrus v1.8.1 // indirect
